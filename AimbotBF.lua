@@ -1,57 +1,52 @@
-}-- [[ JD_PVP V11 - ACIDUM RIFLE M1 EDITION ]] --
+-- [[ JD_PVP V12 - SEGURIDAD TOTAL ]] --
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
--- 1. LIMPIEZA RADICAL (Elimina los menús bugeados de tu foto)
-for _, v in pairs(game.CoreGui:GetChildren()) do
-    if v.Name == "JD_PVP_GUI" or v.Name == "JD_PVP_STABLE" then
-        v:Destroy()
+-- 1. LIMPIEZA INMEDIATA
+local function CleanOld()
+    for _, v in pairs(game.CoreGui:GetChildren()) do
+        if v.Name == "JD_PVP_GUI" then v:Destroy() end
     end
 end
+pcall(CleanOld)
 
 _G.JD_STATUS = false
 
--- 2. INTERFAZ JD_PVP
-local gui = Instance.new("ScreenGui", game.CoreGui)
-gui.Name = "JD_PVP_GUI"
+-- 2. INTERFAZ (ESTRUCTURA BÁSICA PARA EVITAR ERRORES)
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "JD_PVP_GUI"
 
-local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0, 180, 0, 100)
-main.Position = UDim2.new(0.1, 0, 0.4, 0)
-main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-main.Active = true
-main.Draggable = true
-Instance.new("UICorner", main)
+local Main = Instance.new("Frame", ScreenGui)
+Main.Size = UDim2.new(0, 180, 0, 100)
+Main.Position = UDim2.new(0.5, -90, 0.4, 0) -- Centrado
+Main.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Main.Active = true
+Main.Draggable = true
+Instance.new("UICorner", Main)
 
-local close = Instance.new("TextButton", main)
-close.Size = UDim2.new(0, 25, 0, 25)
-close.Position = UDim2.new(0, 5, 0, 5)
-close.Text = "X"
-close.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-close.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", close)
+local CloseBtn = Instance.new("TextButton", Main)
+CloseBtn.Size = UDim2.new(0, 25, 0, 25)
+CloseBtn.Position = UDim2.new(0, 0, 0, 0)
+CloseBtn.Text = "X"
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+CloseBtn.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", CloseBtn)
 
-local title = Instance.new("TextLabel", main)
-title.Text = "JD_PVP"
-title.Size = UDim2.new(1, 0, 0, 30)
-title.TextColor3 = Color3.new(1, 1, 1)
-title.BackgroundTransparency = 1
-title.Font = Enum.Font.SourceSansBold
+local Toggle = Instance.new("TextButton", Main)
+Toggle.Size = UDim2.new(0, 140, 0, 40)
+Toggle.Position = UDim2.new(0.5, -70, 0, 40)
+Toggle.Text = "M1 RIFLE: OFF"
+Toggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+Toggle.TextColor3 = Color3.new(1, 1, 1)
+Toggle.Font = Enum.Font.SourceSansBold
+Instance.new("UICorner", Toggle)
 
-local toggle = Instance.new("TextButton", main)
-toggle.Size = UDim2.new(0, 150, 0, 45)
-toggle.Position = UDim2.new(0.5, -75, 0, 45)
-toggle.Text = "M1 SILENT: OFF"
-toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-toggle.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", toggle)
-
--- 3. FUNCIÓN DE BÚSQUEDA (OPTIMIZADA PARA PVP)
-local function getClosestPlayer()
+-- 3. LÓGICA DE BÚSQUEDA (SIN LAG)
+local function GetClosest()
     local target = nil
-    local dist = 600
+    local dist = 500
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
             local hum = p.Character:FindFirstChildOfClass("Humanoid")
@@ -67,27 +62,28 @@ local function getClosestPlayer()
     return target
 end
 
--- 4. CONTROL DE BOTONES
-close.MouseButton1Click:Connect(function()
+-- 4. FUNCIONAMIENTO DE BOTONES
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
     _G.JD_STATUS = false
-    gui:Destroy()
 end)
 
-toggle.MouseButton1Click:Connect(function()
+Toggle.MouseButton1Click:Connect(function()
     _G.JD_STATUS = not _G.JD_STATUS
-    toggle.Text = _G.JD_STATUS and "M1 SILENT: ON" or "M1 SILENT: OFF"
-    toggle.BackgroundColor3 = _G.JD_STATUS and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(50, 50, 50)
+    Toggle.Text = _G.JD_STATUS and "M1 RIFLE: ON" or "M1 RIFLE: OFF"
+    Toggle.BackgroundColor3 = _G.JD_STATUS and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(60, 60, 60)
 end)
 
--- 5. EL SECRETO PARA LOS M1 DEL RIFLE
--- Redirigimos el mouse.Hit solo cuando hay un objetivo
+-- 5. REDIRECCIÓN M1 (MÉTODO COMPATIBLE)
 local oldIndex
 oldIndex = hookmetamethod(game, "__index", function(self, index)
     if _G.JD_STATUS and self == Mouse and (index == "Hit" or index == "Target") then
-        local target = getClosestPlayer()
+        local target = GetClosest()
         if target then
             return (index == "Hit" and target.CFrame or target.Parent)
         end
     end
     return oldIndex(self, index)
 end)
+
+print("JD_PVP cargado con éxito. ¡A darle con el Acidum!")
