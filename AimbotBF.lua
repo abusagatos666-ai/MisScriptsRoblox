@@ -1,108 +1,102 @@
--- [[ JD_PVP - VERSIÓN DEFINITIVA ]] --
+-- [[ JD_PVP - VERSIÓN SIN ERRORES ROJOS ]] --
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local RunService = game:GetService("RunService")
 
--- 1. LIMPIEZA FORZADA (Para que no se amontonen los menús)
+-- 1. LIMPIEZA DE MENÚS (Para que no se repitan)
 for _, v in pairs(game.CoreGui:GetChildren()) do
-    if v.Name == "JD_PVP_GUI" then
-        v:Destroy()
-    end
+    if v.Name == "JD_PVP_STABLE" then v:Destroy() end
 end
 
 _G.JD_STATUS = false
 
 -- 2. INTERFAZ JD_PVP
-local gui = Instance.new("ScreenGui", game.CoreGui)
-gui.Name = "JD_PVP_GUI"
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "JD_PVP_STABLE"
 
-local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0, 180, 0, 100)
-main.Position = UDim2.new(0.1, 0, 0.4, 0)
-main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-main.Active = true
-main.Draggable = true -- Puedes moverlo
-Instance.new("UICorner", main)
+local Main = Instance.new("Frame", ScreenGui)
+Main.Size = UDim2.new(0, 160, 0, 90)
+Main.Position = UDim2.new(0.1, 0, 0.4, 0)
+Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Main.Active = true
+Main.Draggable = true
+Instance.new("UICorner", Main)
 
--- EL NOMBRE QUE PEDISTE: JD_PVP
-local title = Instance.new("TextLabel", main)
-title.Text = "JD_PVP"
-title.Size = UDim2.new(1, 0, 0, 30)
-title.TextColor3 = Color3.new(1, 1, 1)
-title.BackgroundTransparency = 1
-title.Font = Enum.Font.SourceSansBold
-title.TextSize = 18
+-- NOMBRE: JD_PVP
+local Title = Instance.new("TextLabel", Main)
+Title.Text = "JD_PVP"
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.BackgroundTransparency = 1
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 16
 
--- EL BOTÓN X QUE SÍ FUNCIONA
-local close = Instance.new("TextButton", main)
-close.Size = UDim2.new(0, 25, 0, 25)
-close.Position = UDim2.new(0, 5, 0, 5)
-close.Text = "X"
-close.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-close.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", close)
+-- BOTÓN X (Cerrar)
+local CloseBtn = Instance.new("TextButton", Main)
+CloseBtn.Size = UDim2.new(0, 22, 0, 22)
+CloseBtn.Position = UDim2.new(0, 5, 0, 5)
+CloseBtn.Text = "X"
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", CloseBtn)
 
-local toggle = Instance.new("TextButton", main)
-toggle.Size = UDim2.new(0, 150, 0, 45)
-toggle.Position = UDim2.new(0.5, -75, 0, 45)
-toggle.Text = "AIMBOT: OFF"
-toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-toggle.TextColor3 = Color3.new(1, 1, 1)
-toggle.Font = Enum.Font.SourceSansBold
-Instance.new("UICorner", toggle)
+-- BOTÓN ACTIVAR
+local Toggle = Instance.new("TextButton", Main)
+Toggle.Size = UDim2.new(0, 130, 0, 35)
+Toggle.Position = UDim2.new(0.5, -65, 0, 40)
+Toggle.Text = "AIM: OFF"
+Toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Toggle.TextColor3 = Color3.new(1, 1, 1)
+Toggle.Font = Enum.Font.SourceSansBold
+Instance.new("UICorner", Toggle)
 
--- 3. BÚSQUEDA DE OBJETIVO (SOLO JUGADORES)
+-- 3. LÓGICA DE BÚSQUEDA (Sin errores de Health)
 local function getTarget()
-    local target = nil
-    local dist = 600
+    local closest = nil
+    local dist = 500
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
             local hum = p.Character:FindFirstChildOfClass("Humanoid")
-            -- Verificación de salud para evitar errores en consola
             if hum and hum.Health > 0 then
                 local mag = (LocalPlayer.Character.HumanoidRootPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
                 if mag < dist then
                     dist = mag
-                    target = p.Character.HumanoidRootPart
+                    closest = p.Character.HumanoidRootPart
                 end
             end
         end
     end
-    return target
+    return closest
 end
 
--- 4. CONEXIÓN DE BOTONES
-close.MouseButton1Click:Connect(function()
+-- 4. ACCIONES DE BOTONES
+CloseBtn.MouseButton1Click:Connect(function()
     _G.JD_STATUS = false
-    gui:Destroy()
+    ScreenGui:Destroy()
 end)
 
-toggle.MouseButton1Click:Connect(function()
+Toggle.MouseButton1Click:Connect(function()
     _G.JD_STATUS = not _G.JD_STATUS
-    toggle.Text = _G.JD_STATUS and "AIMBOT: ON" or "AIMBOT: OFF"
-    toggle.BackgroundColor3 = _G.JD_STATUS and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(50, 50, 50)
+    Toggle.Text = _G.JD_STATUS and "AIM: ON" or "AIM: OFF"
+    Toggle.BackgroundColor3 = _G.JD_STATUS and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(50, 50, 50)
 end)
 
--- 5. SILENT AIM (REDIRECCIÓN DE ATAQUES)
--- Este método es el más estable y no debería darte errores
-local target = nil
+-- 5. AIMBOT SIN MOVER CÁMARA (MÉTODO COMPATIBLE 100%)
+-- Este método mueve el cursor del mouse internamente hacia el enemigo
 RunService.RenderStepped:Connect(function()
     if _G.JD_STATUS then
-        target = getTarget()
-    else
-        target = nil
+        local target = getTarget()
+        if target then
+            -- Mover el mouse a la posición del enemigo (Solo para el juego)
+            -- Esto hará que tus habilidades y M1 vayan al enemigo sin girar tu vista
+            local pos = workspace.CurrentCamera:WorldToViewportPoint(target.Position)
+            -- pcall evita que el script muera si el ejecutor no permite mouse_event
+            pcall(function()
+                if mousemoveabs then
+                    mousemoveabs(pos.X, pos.Y)
+                end
+            end)
+        end
     end
 end)
-
-local mt = getrawmetatable(game)
-setreadonly(mt, false)
-local old = mt.__index
-
-mt.__index = newcclosure(function(t, k)
-    if _G.JD_STATUS and t == Mouse and (k == "Hit" or k == "Target") and target then
-        return (k == "Hit" and target.CFrame or target.Parent)
-    end
-    return old(t, k)
-end)
-setreadonly(mt, true)
