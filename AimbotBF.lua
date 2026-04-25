@@ -1,68 +1,91 @@
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
-local Window = OrionLib:MakeWindow({Name = "Marine Events Pro - Sea 3", HidePremium = false, SaveConfig = true, ConfigFolder = "MarineEvents"})
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Variables de Control
-getgenv().AutoFarmSea = false
+local Window = Rayfield:CreateWindow({
+   Name = "🌊 Marine Event Farm | Sea 3",
+   LoadingTitle = "Cargando Script de GitHub...",
+   LoadingSubtitle = "Auto-Farm & Boat Control",
+   ConfigurationSaving = { Enabled = true, FolderName = "MarineHunter" }
+})
+
+-- VARIABLES GLOBALES
+getgenv().AutoFarm = false
 getgenv().AutoDrive = false
+getgenv().TargetEnemies = {"Sea Beast", "TerrorShark", "Terrorshark", "Piranha", "Shark", "Ghost Ship"}
 
--- Función para manejar el barco (Auto-Drive)
-spawn(function()
-    while wait() do
-        if getgenv().AutoDrive then
-            local boat = game.Workspace.Boats:FindFirstChild(game.Players.LocalPlayer.Name .. "Boat")
-            if boat and boat:FindFirstChild("VehicleSeat") then
-                boat.VehicleSeat.Throttle = 1
-                -- Aquí se puede añadir lógica para girar en círculos en zonas de peligro
-            end
-        end
-    end
-end)
+-- PESTAÑA PRINCIPAL
+local MainTab = Window:CreateTab("Principal", 4483345998)
 
--- Pestaña Principal
-local MainTab = Window:MakeTab({
-	Name = "Eventos Marinos",
-	Icon = "rbxassetid://4483345998",
-	PremiumOnly = false
+MainTab:CreateToggle({
+   Name = "Auto-Farm de Eventos (Matar Todo)",
+   CurrentValue = false,
+   Callback = function(Value)
+      getgenv().AutoFarm = Value
+      if Value then
+          spawn(function()
+              while getgenv().AutoFarm do
+                  task.wait(0.5)
+                  pcall(function()
+                      for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                          if table.find(getgenv().TargetEnemies, v.Name) or v:FindFirstChild("Humanoid") then
+                              local humanoid = v:FindFirstChild("Humanoid")
+                              if humanoid and humanoid.Health > 0 then
+                                  -- Teleport sobre el enemigo para seguridad
+                                  game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 40, 0)
+                                  
+                                  -- Simular Click de Ataque
+                                  game:GetService("VirtualUser"):CaptureController()
+                                  game:GetService("VirtualUser"):Button1Down(Vector2.new(0,0))
+                              end
+                          end
+                      end
+                  end)
+              end
+          end)
+      end
+   end,
 })
 
-MainTab:AddToggle({
-	Name = "Auto-Farm Eventos (Sea Beast/Ship)",
-	Default = false,
-	Callback = function(Value)
-		getgenv().AutoFarmSea = Value
-        if Value then
-            print("Buscando amenazas marinas...")
-            -- Aquí se inserta la lógica de ataque (Aimbot a Sea Beasts)
-        end
-	end    
+MainTab:CreateToggle({
+   Name = "Auto-Conducir Barco (Zonas de Peligro)",
+   CurrentValue = false,
+   Callback = function(Value)
+      getgenv().AutoDrive = Value
+      if Value then
+          spawn(function()
+              while getgenv().AutoDrive do
+                  task.wait(0.1)
+                  local boat = game.Workspace.Boats:FindFirstChild(game.Players.LocalPlayer.Name .. "Boat") 
+                  -- Si no encuentra con nombre, busca el que estés ocupando
+                  if not boat then
+                      for _, b in pairs(game.Workspace.Boats:GetChildren()) do
+                          if b:FindFirstChild("VehicleSeat") and b.VehicleSeat.Occupant == game.Players.LocalPlayer.Character.Humanoid then
+                              boat = b
+                          end
+                      end
+                  end
+
+                  if boat and boat:FindFirstChild("VehicleSeat") then
+                      boat.VehicleSeat.Throttle = 1
+                      boat.VehicleSeat.Steer = 0.05 -- Giro suave para patrullar
+                  end
+              end
+          end)
+      end
+   end,
 })
 
-MainTab:AddToggle({
-	Name = "Auto-Conducir Barco",
-	Default = false,
-	Callback = function(Value)
-		getgenv().AutoDrive = Value
-	end    
+-- PESTAÑA DE BARCO
+local BoatTab = Window:CreateTab("Ajustes de Barco", 4483362458)
+
+BoatTab:CreateButton({
+   Name = "Teleport al Asiento del Barco",
+   Callback = function()
+       for _, b in pairs(game.Workspace.Boats:GetChildren()) do
+           if b:FindFirstChild("VehicleSeat") then
+               game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = b.VehicleSeat.CFrame
+           end
+       end
+   end,
 })
 
--- Pestaña de Configuración de Barco
-local BoatTab = Window:MakeTab({
-	Name = "Barco & Velocidad",
-	Icon = "rbxassetid://4483362458",
-	PremiumOnly = false
-})
-
-BoatTab:AddSlider({
-	Name = "Velocidad del Barco",
-	Min = 50,
-	Max = 300,
-	Default = 100,
-	Color = Color3.fromRGB(255,255,255),
-	Increment = 10,
-	ValueName = "KM/H",
-	Callback = function(Value)
-		-- Ajusta la velocidad del asiento del barco
-	end    
-})
-
-OrionLib:Init()
+Rayfield:LoadConfiguration()
