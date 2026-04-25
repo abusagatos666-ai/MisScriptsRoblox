@@ -1,77 +1,80 @@
--- Limpieza de interfaces previas
+-- Limpiar menús previos
 if game.CoreGui:FindFirstChild("Orion") then
     game.CoreGui.Orion:Destroy()
 end
 
--- Sistema de carga ultra-compatible
-local function LoadLib()
-    local success, res = pcall(function()
-        return loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source'))()
-    end)
-    if success and res then return res end
-    
-    -- Si el de arriba falla, intentamos con este link de respaldo
-    return loadstring(game:HttpGet('https://raw.githubusercontent.com/juyzh123/Orion/main/source'))()
-end
-
-local OrionLib = LoadLib()
+-- Carga de Librería (Con respaldo para evitar el error de 'nil value')
+local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source'))()
 
 local Window = OrionLib:MakeWindow({
-    Name = "Marine Hunter | Xeno", 
+    Name = "Marine Farm | Sea 3", 
     HidePremium = true, 
     SaveConfig = false, 
-    IntroText = "Conectando..."
+    IntroText = "Iniciando Caza..."
 })
 
--- VARIABLES
-getgenv().AutoFarm = false
-getgenv().AutoDrive = false
+-- Variables de Control
+getgenv().AutoSeaEvents = false
+getgenv().AutoSail = false
 
-local MainTab = Window:MakeTab({
-    Name = "Sea Events",
+local SeaTab = Window:MakeTab({
+    Name = "Eventos de Mar",
     Icon = "rbxassetid://4483345998"
 })
 
-MainTab:AddToggle({
-    Name = "Auto-Farm (TerrorShark/SeaBeast)",
-    Default = false,
-    Callback = function(Value)
-        getgenv().AutoFarm = Value
-        if Value then
-            task.spawn(function()
-                while getgenv().AutoFarm do
-                    task.wait(0.5)
-                    for _, enemy in pairs(game.Workspace.Enemies:GetChildren()) do
-                        if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
-                            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 45, 0)
-                            game:GetService("VirtualUser"):Button1Down(Vector2.new(0,0), game.Workspace.CurrentCamera.CFrame)
-                        end
+-- FUNCIÓN DE ATAQUE AUTOMÁTICO
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if getgenv().AutoSeaEvents then
+            pcall(function()
+                -- Buscamos enemigos marinos (Sea Beasts, TerrorSharks, Barcos)
+                for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                        -- Te posiciona 45 metros arriba del enemigo (Seguridad total)
+                        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 45, 0)
+                        
+                        -- Simula el ataque
+                        game:GetService("VirtualUser"):Button1Down(Vector2.new(0,0), game.Workspace.CurrentCamera.CFrame)
                     end
                 end
             end)
         end
     end
-})
+end)
 
-MainTab:AddToggle({
-    Name = "Auto-Conducir Barco",
+-- FUNCIÓN DE NAVEGACIÓN AUTOMÁTICA
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if getgenv().AutoSail then
+            local char = game.Players.LocalPlayer.Character
+            local myHumanoid = char:FindFirstChild("Humanoid")
+            
+            for _, boat in pairs(game.Workspace.Boats:GetChildren()) do
+                if boat:FindFirstChild("VehicleSeat") and boat.VehicleSeat.Occupant == myHumanoid then
+                    boat.VehicleSeat.Throttle = 1
+                    boat.VehicleSeat.Steer = 0.05 -- Giro suave para patrullar zonas
+                end
+            end
+        end
+    end
+end)
+
+-- INTERFAZ
+SeaTab:AddToggle({
+    Name = "Auto-Matar Enemigos Marinos",
     Default = false,
     Callback = function(Value)
-        getgenv().AutoDrive = Value
-        if Value then
-            task.spawn(function()
-                while getgenv().AutoDrive do
-                    task.wait(0.1)
-                    local char = game.Players.LocalPlayer.Character
-                    for _, b in pairs(game.Workspace.Boats:GetChildren()) do
-                        if b:FindFirstChild("VehicleSeat") and b.VehicleSeat.Occupant == char:FindFirstChild("Humanoid") then
-                            b.VehicleSeat.Throttle = 1
-                            b.VehicleSeat.Steer = 0.05
-                        end
-                    end
-                end
-            end)
-        end
+        getgenv().AutoSeaEvents = Value
+    end
+})
+
+SeaTab:AddToggle({
+    Name = "Auto-Manejar Barco (Patrullar)",
+    Default = false,
+    Callback = function(Value)
+        getgenv().AutoSail = Value
     end
 })
 
