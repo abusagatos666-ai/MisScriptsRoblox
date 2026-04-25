@@ -1,29 +1,39 @@
--- Limpiamos cualquier interfaz previa para que no se trabe en Xeno
+-- Limpieza de interfaces previas
 if game.CoreGui:FindFirstChild("Orion") then
     game.CoreGui.Orion:Destroy()
 end
 
--- Cargamos la librería con un sistema de reintento
-local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source'))()
+-- Sistema de carga ultra-compatible
+local function LoadLib()
+    local success, res = pcall(function()
+        return loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source'))()
+    end)
+    if success and res then return res end
+    
+    -- Si el de arriba falla, intentamos con este link de respaldo
+    return loadstring(game:HttpGet('https://raw.githubusercontent.com/juyzh123/Orion/main/source'))()
+end
+
+local OrionLib = LoadLib()
 
 local Window = OrionLib:MakeWindow({
-    Name = "Xeno Marine Hub 🌊", 
+    Name = "Marine Hunter | Xeno", 
     HidePremium = true, 
     SaveConfig = false, 
-    IntroText = "Ejecutando en Xeno..."
+    IntroText = "Conectando..."
 })
 
--- Variables de control
+-- VARIABLES
 getgenv().AutoFarm = false
 getgenv().AutoDrive = false
 
-local Tab = Window:MakeTab({
+local MainTab = Window:MakeTab({
     Name = "Sea Events",
     Icon = "rbxassetid://4483345998"
 })
 
-Tab:AddToggle({
-    Name = "Auto-Farm Eventos Marinos",
+MainTab:AddToggle({
+    Name = "Auto-Farm (TerrorShark/SeaBeast)",
     Default = false,
     Callback = function(Value)
         getgenv().AutoFarm = Value
@@ -31,15 +41,10 @@ Tab:AddToggle({
             task.spawn(function()
                 while getgenv().AutoFarm do
                     task.wait(0.5)
-                    -- Buscamos enemigos en el mar
-                    for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
-                        if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") then
-                            if v.Humanoid.Health > 0 then
-                                -- Posicionamiento seguro sobre el enemigo
-                                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 45, 0)
-                                -- Ataque automático (Simula click)
-                                game:GetService("VirtualUser"):Button1Down(Vector2.new(0,0), game.Workspace.CurrentCamera.CFrame)
-                            end
+                    for _, enemy in pairs(game.Workspace.Enemies:GetChildren()) do
+                        if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+                            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 45, 0)
+                            game:GetService("VirtualUser"):Button1Down(Vector2.new(0,0), game.Workspace.CurrentCamera.CFrame)
                         end
                     end
                 end
@@ -48,29 +53,21 @@ Tab:AddToggle({
     end
 })
 
-Tab:AddToggle({
-    Name = "Auto-Manejar Barco",
+MainTab:AddToggle({
+    Name = "Auto-Conducir Barco",
     Default = false,
     Callback = function(Value)
         getgenv().AutoDrive = Value
         if Value then
             task.spawn(function()
                 while getgenv().AutoDrive do
-                    task.wait(0.2)
-                    local character = game.Players.LocalPlayer.Character
-                    local boat = nil
-                    
-                    -- Buscamos el barco que estamos ocupando
+                    task.wait(0.1)
+                    local char = game.Players.LocalPlayer.Character
                     for _, b in pairs(game.Workspace.Boats:GetChildren()) do
-                        if b:FindFirstChild("VehicleSeat") and b.VehicleSeat.Occupant == character:FindFirstChild("Humanoid") then
-                            boat = b
-                            break
+                        if b:FindFirstChild("VehicleSeat") and b.VehicleSeat.Occupant == char:FindFirstChild("Humanoid") then
+                            b.VehicleSeat.Throttle = 1
+                            b.VehicleSeat.Steer = 0.05
                         end
-                    end
-                    
-                    if boat then
-                        boat.VehicleSeat.Throttle = 1
-                        boat.VehicleSeat.Steer = 0.05
                     end
                 end
             end)
@@ -78,5 +75,4 @@ Tab:AddToggle({
     end
 })
 
--- Inicialización final obligatoria
 OrionLib:Init()
