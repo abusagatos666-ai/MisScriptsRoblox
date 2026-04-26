@@ -1,81 +1,79 @@
--- Limpiar menús previos
-if game.CoreGui:FindFirstChild("Orion") then
-    game.CoreGui.Orion:Destroy()
+--[[
+    Framework de Utilidades para Personajes en Roblox
+    Funcionalidades: WaterWalk, PlayerESP, FastTeleport
+]]
+
+local UtilityLib = {}
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local localPlayer = Players.LocalPlayer
+
+-- 1. FUNCION: CAMINAR SOBRE EL AGUA
+function UtilityLib.EnableWaterWalk()
+    local char = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    
+    local platform = Instance.new("Part")
+    platform.Name = "WaterPlatform"
+    platform.Size = Vector3.new(6, 1, 6)
+    platform.Transparency = 1
+    platform.Anchored = true
+    platform.Parent = workspace
+
+    RunService.Heartbeat:Connect(function()
+        local ray = Ray.new(hrp.Position, Vector3.new(0, -5, 0))
+        local hit, pos, mat = workspace:FindPartOnRayWithIgnoreList(ray, {char, platform})
+        
+        if hit and hit.ClassName == "Terrain" and mat == Enum.Material.Water then
+            platform.CFrame = CFrame.new(hrp.Position.X, pos.Y, hrp.Position.Z)
+            platform.CanCollide = true
+        else
+            platform.CanCollide = false
+            platform.CFrame = CFrame.new(0, -1000, 0)
+        end
+    end)
 end
 
--- Carga de Librería (Con respaldo para evitar el error de 'nil value')
-local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source'))()
-
-local Window = OrionLib:MakeWindow({
-    Name = "Marine Farm | Sea 3", 
-    HidePremium = true, 
-    SaveConfig = false, 
-    IntroText = "Iniciando Caza..."
-})
-
--- Variables de Control
-getgenv().AutoSeaEvents = false
-getgenv().AutoSail = false
-
-local SeaTab = Window:MakeTab({
-    Name = "Eventos de Mar",
-    Icon = "rbxassetid://4483345998"
-})
-
--- FUNCIÓN DE ATAQUE AUTOMÁTICO
-task.spawn(function()
-    while true do
-        task.wait(0.1)
-        if getgenv().AutoSeaEvents then
-            pcall(function()
-                -- Buscamos enemigos marinos (Sea Beasts, TerrorSharks, Barcos)
-                for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
-                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                        -- Te posiciona 45 metros arriba del enemigo (Seguridad total)
-                        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 45, 0)
-                        
-                        -- Simula el ataque
-                        game:GetService("VirtualUser"):Button1Down(Vector2.new(0,0), game.Workspace.CurrentCamera.CFrame)
-                    end
-                end
-            end)
-        end
-    end
-end)
-
--- FUNCIÓN DE NAVEGACIÓN AUTOMÁTICA
-task.spawn(function()
-    while true do
-        task.wait(0.5)
-        if getgenv().AutoSail then
-            local char = game.Players.LocalPlayer.Character
-            local myHumanoid = char:FindFirstChild("Humanoid")
+-- 2. FUNCION: VER NOMBRES (ESP)
+function UtilityLib.EnableGlobalESP()
+    local function applyESP(player)
+        if player == localPlayer then return end
+        player.CharacterAdded:Connect(function(char)
+            local head = char:WaitForChild("Head")
+            local gui = Instance.new("BillboardGui", head)
+            gui.Size = UDim2.new(0, 100, 0, 50)
+            gui.AlwaysOnTop = true
+            gui.StudsOffset = Vector3.new(0, 2, 0)
             
-            for _, boat in pairs(game.Workspace.Boats:GetChildren()) do
-                if boat:FindFirstChild("VehicleSeat") and boat.VehicleSeat.Occupant == myHumanoid then
-                    boat.VehicleSeat.Throttle = 1
-                    boat.VehicleSeat.Steer = 0.05 -- Giro suave para patrullar zonas
+            local label = Instance.new("TextLabel", gui)
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            label.Text = player.Name
+            label.TextColor3 = Color3.fromRGB(255, 0, 0) -- Rojo para visibilidad
+            label.TextStrokeTransparency = 0
+        end)
+    end
+
+    for _, p in pairs(Players:GetPlayers()) do applyESP(p) end
+    Players.PlayerAdded:Connect(applyESP)
+end
+
+-- 3. FUNCION: TELETRANSPORTE RÁPIDO (Tecla T)
+function UtilityLib.EnableFastTP()
+    UIS.InputBegan:Connect(function(input, processed)
+        if processed then return end
+        if input.KeyCode == Enum.KeyCode.T then
+            local targets = Players:GetPlayers()
+            for _, target in pairs(targets) do
+                if target ~= localPlayer and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                    localPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+                    break
                 end
             end
         end
-    end
-end)
+    end)
+end
 
--- INTERFAZ
-SeaTab:AddToggle({
-    Name = "Auto-Matar Enemigos Marinos",
-    Default = false,
-    Callback = function(Value)
-        getgenv().AutoSeaEvents = Value
-    end
-})
-
-SeaTab:AddToggle({
-    Name = "Auto-Manejar Barco (Patrullar)",
-    Default = false,
-    Callback = function(Value)
-        getgenv().AutoSail = Value
-    end
-})
-
-OrionLib:Init()
+return UtilityLib
