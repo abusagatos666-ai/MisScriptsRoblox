@@ -1,128 +1,97 @@
--- Limpiar guis anteriores si existen
-local oldGui = game:GetService("CoreGui"):FindFirstChild("UtilityMenu")
-if oldGui then oldGui:Destroy() end
+--[[
+    GitHub Project: Sea Farm Utility
+    Auto-Features: Auto Water Walk
+    Manual-Features: Player Teleport (Button & Key T)
+]]
 
 local Players = game:GetService("Players")
-local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
-local localPlayer = Players.LocalPlayer
+local lp = Players.LocalPlayer
 
--- Interfaz Principal
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "UtilityMenu"
-screenGui.Parent = CoreGui
+-- Limpiar versiones anteriores
+local old = lp:WaitForChild("PlayerGui"):FindFirstChild("SeaFarmMenu")
+if old then old:Destroy() end
 
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 200, 0, 220)
-mainFrame.Position = UDim2.new(0.1, 0, 0.4, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-mainFrame.BorderSizePixel = 0
-mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.Parent = screenGui
+-- --- INTERFAZ SEA FARM ---
+local sg = Instance.new("ScreenGui")
+sg.Name = "SeaFarmMenu"
+sg.ResetOnSpawn = false
+sg.Parent = lp:WaitForChild("PlayerGui")
 
-Instance.new("UICorner", mainFrame).CornerRadius = RaycastParams.new().FilterType == Enum.RaycastFilterType.Exclude and UDim.new(0, 8) or UDim.new(0,8)
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 180, 0, 150)
+frame.Position = UDim2.new(0.1, 0, 0.4, 0)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 40) -- Azul oscuro temático
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true 
+frame.Parent = sg
+
+local corner = Instance.new("UICorner", frame)
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 35)
-title.Text = "MOD MENU"
-title.TextColor3 = Color3.new(1, 1, 1)
+title.Text = "SEA FARM"
+title.TextColor3 = Color3.fromRGB(0, 255, 255) -- Color Cyan
 title.BackgroundTransparency = 1
 title.Font = Enum.Font.GothamBold
-title.TextSize = 16
-title.Parent = mainFrame
+title.TextSize = 18
+title.Parent = frame
 
--- Función para crear botones rápido
-local function crearBtn(txt, pos, color)
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0, 180, 0, 35)
-    b.Position = pos
-    b.Text = txt
-    b.BackgroundColor3 = color
-    b.TextColor3 = Color3.new(1, 1, 1)
-    b.Font = Enum.Font.Gotham
-    b.TextSize = 13
-    b.Parent = mainFrame
-    Instance.new("UICorner", b)
-    return b
-end
+-- --- LÓGICA CAMINAR AGUA (AUTO-ACTIVADO) ---
+local platform = Instance.new("Part")
+platform.Name = "SeaFarmPlatform"
+platform.Size = Vector3.new(15, 1, 15)
+platform.Anchored = true
+platform.Transparency = 1 -- Invisible
+platform.Parent = workspace
 
-local btnWater = crearBtn("Caminar Agua: OFF", UDim2.new(0, 10, 0, 45), Color3.fromRGB(45, 85, 155))
-local btnESP = crearBtn("Ver Jugadores: OFF", UDim2.new(0, 10, 0, 90), Color3.fromRGB(155, 45, 45))
-local btnTP = crearBtn("TP Jugador (Tecla T)", UDim2.new(0, 10, 0, 135), Color3.fromRGB(45, 155, 85))
+-- Mensaje en consola para confirmar activación
+print("[SEA FARM] Caminar sobre el agua activado automáticamente.")
 
--- 1. Lógica Agua
-local waterOn = false
-local plat = Instance.new("Part")
-plat.Size = Vector3.new(10, 1, 10)
-plat.Anchored = true
-plat.Transparency = 1
-plat.Parent = workspace
-
-btnWater.MouseButton1Click:Connect(function()
-    waterOn = not waterOn
-    btnWater.Text = "Caminar Agua: " .. (waterOn and "ON" or "OFF")
-end)
-
-RunService.RenderStepped:Connect(function()
-    if waterOn and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local hrp = localPlayer.Character.HumanoidRootPart
+RunService.Heartbeat:Connect(function()
+    if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = lp.Character.HumanoidRootPart
+        -- Detectar agua debajo
         local ray = Ray.new(hrp.Position, Vector3.new(0, -6, 0))
-        local hit, pos, mat = workspace:FindPartOnRayWithIgnoreList(ray, {localPlayer.Character, plat})
+        local hit, pos, mat = workspace:FindPartOnRayWithIgnoreList(ray, {lp.Character, platform})
+        
         if hit and mat == Enum.Material.Water then
-            plat.CFrame = CFrame.new(hrp.Position.X, pos.Y, hrp.Position.Z)
-            plat.CanCollide = true
+            platform.CFrame = CFrame.new(hrp.Position.X, pos.Y, hrp.Position.Z)
+            platform.CanCollide = true
         else
-            plat.CanCollide = false
+            platform.CanCollide = false
         end
-    else
-        plat.CanCollide = false
     end
 end)
 
--- 2. Lógica ESP (Nombres)
-local espOn = false
-btnESP.MouseButton1Click:Connect(function()
-    espOn = not espOn
-    btnESP.Text = "Ver Jugadores: " .. (espOn and "ON" or "OFF")
-end)
-
-local function updateESP()
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= localPlayer and p.Character and p.Character:FindFirstChild("Head") then
-            local head = p.Character.Head
-            local gui = head:FindFirstChild("ESPTag")
-            if not gui then
-                gui = Instance.new("BillboardGui", head)
-                gui.Name = "ESPTag"
-                gui.Size = UDim2.new(0, 100, 0, 20)
-                gui.AlwaysOnTop = true
-                gui.StudsOffset = Vector3.new(0, 3, 0)
-                local t = Instance.new("TextLabel", gui)
-                t.Size = UDim2.new(1, 0, 1, 0)
-                t.BackgroundTransparency = 1
-                t.TextColor3 = Color3.new(1, 0, 0)
-                t.TextStrokeTransparency = 0
-                t.Text = p.Name
-            end
-            gui.Enabled = espOn
-        end
-    end
-end
-RunService.RenderStepped:Connect(updateESP)
-
--- 3. Lógica Teletransporte
+-- --- LÓGICA TELETRANSPORTE ---
 local function tpToPlayer()
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= localPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            localPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-            break
+    local targets = Players:GetPlayers()
+    for _, v in pairs(targets) do
+        if v ~= lp and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            -- Teletransportarse 3 studs detrás del jugador encontrado
+            lp.Character.HumanoidRootPart.CFrame = v.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+            print("[SEA FARM] Teletransportado a: " .. v.Name)
+            break 
         end
     end
 end
+
+-- Botón de TP en el menú
+local btnTP = Instance.new("TextButton")
+btnTP.Size = UDim2.new(0, 160, 0, 40)
+btnTP.Position = UDim2.new(0, 10, 0, 50)
+btnTP.Text = "TP a Jugador"
+btnTP.BackgroundColor3 = Color3.fromRGB(0, 150, 150)
+btnTP.TextColor3 = Color3.new(1, 1, 1)
+btnTP.Font = Enum.Font.GothamMedium
+btnTP.Parent = frame
+Instance.new("UICorner", btnTP)
 
 btnTP.MouseButton1Click:Connect(tpToPlayer)
-UIS.InputBegan:Connect(function(i, p)
-    if not p and i.KeyCode == Enum.KeyCode.T then tpToPlayer() end
-end)
+
+-- Tecla T para TP rápido
+UIS.InputBegan:Connect(function(input, processed)
+    if
