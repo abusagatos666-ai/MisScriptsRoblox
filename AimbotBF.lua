@@ -1,97 +1,90 @@
---[[
-    GitHub Project: Sea Farm Utility
-    Auto-Features: Auto Water Walk
-    Manual-Features: Player Teleport (Button & Key T)
-]]
-
+-- [[ SEA FARM V1 - CONFIGURACIÓN ]] --
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
-local lp = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
--- Limpiar versiones anteriores
-local old = lp:WaitForChild("PlayerGui"):FindFirstChild("SeaFarmMenu")
-if old then old:Destroy() end
+-- 1. LIMPIEZA
+for _, v in pairs(game.CoreGui:GetChildren()) do
+    if v.Name == "SeaFarm_G" then v:Destroy() end
+end
 
--- --- INTERFAZ SEA FARM ---
-local sg = Instance.new("ScreenGui")
-sg.Name = "SeaFarmMenu"
-sg.ResetOnSpawn = false
-sg.Parent = lp:WaitForChild("PlayerGui")
+-- 2. INTERFAZ
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.Name = "SeaFarm_G"
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 180, 0, 150)
-frame.Position = UDim2.new(0.1, 0, 0.4, 0)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 40) -- Azul oscuro temático
-frame.BorderSizePixel = 0
-frame.Active = true
-frame.Draggable = true 
-frame.Parent = sg
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0, 200, 0, 150)
+main.Position = UDim2.new(0.1, 0, 0.4, 0)
+main.BackgroundColor3 = Color3.fromRGB(15, 15, 30) -- Color azul oscuro para Sea Farm
+main.Active = true
+main.Draggable = true
+Instance.new("UICorner", main)
 
-local corner = Instance.new("UICorner", frame)
-
-local title = Instance.new("TextLabel")
+local title = Instance.new("TextLabel", main)
+title.Text = "SEA FARM - TP [T]"
 title.Size = UDim2.new(1, 0, 0, 35)
-title.Text = "SEA FARM"
-title.TextColor3 = Color3.fromRGB(0, 255, 255) -- Color Cyan
+title.TextColor3 = Color3.fromRGB(0, 255, 255)
 title.BackgroundTransparency = 1
-title.Font = Enum.Font.GothamBold
+title.Font = Enum.Font.SourceSansBold
 title.TextSize = 18
-title.Parent = frame
 
--- --- LÓGICA CAMINAR AGUA (AUTO-ACTIVADO) ---
-local platform = Instance.new("Part")
-platform.Name = "SeaFarmPlatform"
-platform.Size = Vector3.new(15, 1, 15)
-platform.Anchored = true
-platform.Transparency = 1 -- Invisible
-platform.Parent = workspace
+-- Función para botones rápida (Igual a la tuya)
+local function createBtn(pos, text)
+    local btn = Instance.new("TextButton", main)
+    btn.Size = UDim2.new(0, 180, 0, 40)
+    btn.Position = UDim2.new(0.5, -90, 0, pos)
+    btn.Text = text
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 60)
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.SourceSansBold
+    Instance.new("UICorner", btn)
+    return btn
+end
 
--- Mensaje en consola para confirmar activación
-print("[SEA FARM] Caminar sobre el agua activado automáticamente.")
+local btnTP = createBtn(50, "TP A JUGADOR")
+local infoLabel = Instance.new("TextLabel", main)
+infoLabel.Size = UDim2.new(1, 0, 0, 30)
+infoLabel.Position = UDim2.new(0, 0, 0, 100)
+infoLabel.Text = "AGUA: AUTO-ACTIVADO"
+infoLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+infoLabel.BackgroundTransparency = 1
+infoLabel.Font = Enum.Font.SourceSansBold
 
-RunService.Heartbeat:Connect(function()
-    if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-        local hrp = lp.Character.HumanoidRootPart
-        -- Detectar agua debajo
-        local ray = Ray.new(hrp.Position, Vector3.new(0, -6, 0))
-        local hit, pos, mat = workspace:FindPartOnRayWithIgnoreList(ray, {lp.Character, platform})
-        
-        if hit and mat == Enum.Material.Water then
-            platform.CFrame = CFrame.new(hrp.Position.X, pos.Y, hrp.Position.Z)
-            platform.CanCollide = true
-        else
-            platform.CanCollide = false
+-- 3. LÓGICA CAMINAR AGUA (SE ACTIVA AL EJECUTAR)
+local plat = Instance.new("Part", workspace)
+plat.Name = "SeaFarm_WaterPlatform"
+plat.Size = Vector3.new(25, 1, 25)
+plat.Anchored = true
+plat.Transparency = 1 -- Invisible para que no moleste
+
+-- 4. FUNCIÓN TELEPORT (Basada en tu lógica de búsqueda)
+local function teleportToPlayer()
+    local target = nil
+    local shortestDist = math.huge
+    
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
+            if dist < shortestDist then
+                shortestDist = dist
+                target = p.Character.HumanoidRootPart
+            end
         end
     end
-end)
-
--- --- LÓGICA TELETRANSPORTE ---
-local function tpToPlayer()
-    local targets = Players:GetPlayers()
-    for _, v in pairs(targets) do
-        if v ~= lp and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-            -- Teletransportarse 3 studs detrás del jugador encontrado
-            lp.Character.HumanoidRootPart.CFrame = v.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-            print("[SEA FARM] Teletransportado a: " .. v.Name)
-            break 
-        end
+    
+    if target then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = target.CFrame * CFrame.new(0, 0, 3)
     end
 end
 
--- Botón de TP en el menú
-local btnTP = Instance.new("TextButton")
-btnTP.Size = UDim2.new(0, 160, 0, 40)
-btnTP.Position = UDim2.new(0, 10, 0, 50)
-btnTP.Text = "TP a Jugador"
-btnTP.BackgroundColor3 = Color3.fromRGB(0, 150, 150)
-btnTP.TextColor3 = Color3.new(1, 1, 1)
-btnTP.Font = Enum.Font.GothamMedium
-btnTP.Parent = frame
-Instance.new("UICorner", btnTP)
+-- Botón TP
+btnTP.MouseButton1Click:Connect(function()
+    teleportToPlayer()
+end)
 
-btnTP.MouseButton1Click:Connect(tpToPlayer)
-
--- Tecla T para TP rápido
-UIS.InputBegan:Connect(function(input, processed)
-    if
+-- Tecla T asignada para TP
+UserInputService.InputBegan:Connect(function(input, proc)
+    if not proc and input.KeyCode == Enum.KeyCode.T then
+        teleportToPlayer()
