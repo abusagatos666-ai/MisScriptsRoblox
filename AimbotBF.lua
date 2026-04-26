@@ -1,137 +1,128 @@
---[[
-    GitHub Project: Blox-Style Admin Utility
-    Features: Water Walk, Global ESP, Player Teleport
-]]
+-- Limpiar guis anteriores si existen
+local oldGui = game:GetService("CoreGui"):FindFirstChild("UtilityMenu")
+if oldGui then oldGui:Destroy() end
 
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+local UIS = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 
--- --- CONFIGURACIÓN DE LA INTERFAZ ---
+-- Interfaz Principal
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "UtilityMenu"
-screenGui.Parent = (RunService:IsStudio() and localPlayer:WaitForChild("PlayerGui") or CoreGui)
+screenGui.Parent = CoreGui
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 200, 0, 250)
-mainFrame.Position = UDim2.new(0, 50, 0.5, -125)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.Size = UDim2.new(0, 200, 0, 220)
+mainFrame.Position = UDim2.new(0.1, 0, 0.4, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
-mainFrame.Draggable = true -- Para que puedas mover el menú
+mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 
-local corner = Instance.new("UICorner", mainFrame)
+Instance.new("UICorner", mainFrame).CornerRadius = RaycastParams.new().FilterType == Enum.RaycastFilterType.Exclude and UDim.new(0, 8) or UDim.new(0,8)
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.Text = "ADMIN PANEL"
+title.Size = UDim2.new(1, 0, 0, 35)
+title.Text = "MOD MENU"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.BackgroundTransparency = 1
 title.Font = Enum.Font.GothamBold
-title.TextSize = 18
+title.TextSize = 16
 title.Parent = mainFrame
 
--- --- ESTILO DE BOTONES ---
-local function crearBoton(texto, posicion, color)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 180, 0, 40)
-    btn.Position = posicion
-    btn.Text = texto
-    btn.BackgroundColor3 = color
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 14
-    btn.Parent = mainFrame
-    Instance.new("UICorner", btn)
-    return btn
+-- Función para crear botones rápido
+local function crearBtn(txt, pos, color)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0, 180, 0, 35)
+    b.Position = pos
+    b.Text = txt
+    b.BackgroundColor3 = color
+    b.TextColor3 = Color3.new(1, 1, 1)
+    b.Font = Enum.Font.Gotham
+    b.TextSize = 13
+    b.Parent = mainFrame
+    Instance.new("UICorner", b)
+    return b
 end
 
-local btnWater = crearBoton("Water Walk: OFF", UDim2.new(0, 10, 0, 50), Color3.fromRGB(50, 50, 200))
-local btnESP = crearBoton("Global ESP: OFF", UDim2.new(0, 10, 0, 100), Color3.fromRGB(200, 50, 50))
-local btnTP = crearBoton("TP a Jugador (T)", UDim2.new(0, 10, 0, 150), Color3.fromRGB(50, 150, 50))
+local btnWater = crearBtn("Caminar Agua: OFF", UDim2.new(0, 10, 0, 45), Color3.fromRGB(45, 85, 155))
+local btnESP = crearBtn("Ver Jugadores: OFF", UDim2.new(0, 10, 0, 90), Color3.fromRGB(155, 45, 45))
+local btnTP = crearBtn("TP Jugador (Tecla T)", UDim2.new(0, 10, 0, 135), Color3.fromRGB(45, 155, 85))
 
--- --- LÓGICA DE LAS FUNCIONES ---
-
--- 1. Water Walk
-local waterEnabled = false
-local platform = Instance.new("Part")
-platform.Size = Vector3.new(8, 1, 8)
-platform.Anchored = true
-platform.Transparency = 1
-platform.Parent = workspace
+-- 1. Lógica Agua
+local waterOn = false
+local plat = Instance.new("Part")
+plat.Size = Vector3.new(10, 1, 10)
+plat.Anchored = true
+plat.Transparency = 1
+plat.Parent = workspace
 
 btnWater.MouseButton1Click:Connect(function()
-    waterEnabled = not waterEnabled
-    btnWater.Text = "Water Walk: " .. (waterEnabled and "ON" or "OFF")
+    waterOn = not waterOn
+    btnWater.Text = "Caminar Agua: " .. (waterOn and "ON" or "OFF")
 end)
 
-RunService.Heartbeat:Connect(function()
-    if waterEnabled and localPlayer.Character then
-        local hrp = localPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            local ray = Ray.new(hrp.Position, Vector3.new(0, -6, 0))
-            local hit, pos, mat = workspace:FindPartOnRayWithIgnoreList(ray, {localPlayer.Character, platform})
-            if hit and mat == Enum.Material.Water then
-                platform.CFrame = CFrame.new(hrp.Position.X, pos.Y, hrp.Position.Z)
-                platform.CanCollide = true
-            else
-                platform.CanCollide = false
-            end
+RunService.RenderStepped:Connect(function()
+    if waterOn and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = localPlayer.Character.HumanoidRootPart
+        local ray = Ray.new(hrp.Position, Vector3.new(0, -6, 0))
+        local hit, pos, mat = workspace:FindPartOnRayWithIgnoreList(ray, {localPlayer.Character, plat})
+        if hit and mat == Enum.Material.Water then
+            plat.CFrame = CFrame.new(hrp.Position.X, pos.Y, hrp.Position.Z)
+            plat.CanCollide = true
+        else
+            plat.CanCollide = false
         end
     else
-        platform.CanCollide = false
+        plat.CanCollide = false
     end
 end)
 
--- 2. ESP
-local espEnabled = false
+-- 2. Lógica ESP (Nombres)
+local espOn = false
 btnESP.MouseButton1Click:Connect(function()
-    espEnabled = not espEnabled
-    btnESP.Text = "Global ESP: " .. (espEnabled and "ON" or "OFF")
-    for _, p in pairs(Players:GetPlayers()) do
-        if p.Character and p.Character:FindFirstChild("Head") then
-            local gui = p.Character.Head:FindFirstChild("GlobalName")
-            if gui then gui.Enabled = espEnabled end
-        end
-    end
+    espOn = not espOn
+    btnESP.Text = "Ver Jugadores: " .. (espOn and "ON" or "OFF")
 end)
 
--- Función para aplicar el nombre (ESP)
-local function applyESP(p)
-    p.CharacterAdded:Connect(function(char)
-        local head = char:WaitForChild("Head")
-        local bgui = Instance.new("BillboardGui", head)
-        bgui.Name = "GlobalName"
-        bgui.Size = UDim2.new(0, 100, 0, 50)
-        bgui.AlwaysOnTop = true
-        bgui.Enabled = espEnabled
-        bgui.StudsOffset = Vector3.new(0, 3, 0)
-        local tl = Instance.new("TextLabel", bgui)
-        tl.Size = UDim2.new(1, 0, 1, 0)
-        tl.Text = p.Name
-        tl.BackgroundTransparency = 1
-        tl.TextColor3 = Color3.new(1, 1, 1)
-        tl.TextStrokeTransparency = 0
-    end)
+local function updateESP()
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= localPlayer and p.Character and p.Character:FindFirstChild("Head") then
+            local head = p.Character.Head
+            local gui = head:FindFirstChild("ESPTag")
+            if not gui then
+                gui = Instance.new("BillboardGui", head)
+                gui.Name = "ESPTag"
+                gui.Size = UDim2.new(0, 100, 0, 20)
+                gui.AlwaysOnTop = true
+                gui.StudsOffset = Vector3.new(0, 3, 0)
+                local t = Instance.new("TextLabel", gui)
+                t.Size = UDim2.new(1, 0, 1, 0)
+                t.BackgroundTransparency = 1
+                t.TextColor3 = Color3.new(1, 0, 0)
+                t.TextStrokeTransparency = 0
+                t.Text = p.Name
+            end
+            gui.Enabled = espOn
+        end
+    end
 end
-for _, p in pairs(Players:GetPlayers()) do if p ~= localPlayer then applyESP(p) end end
-Players.PlayerAdded:Connect(applyESP)
+RunService.RenderStepped:Connect(updateESP)
 
--- 3. Teleport a Jugadores
-local function doTP()
-    local allPlayers = Players:GetPlayers()
-    for _, target in pairs(allPlayers) do
-        if target ~= localPlayer and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            localPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-            break 
+-- 3. Lógica Teletransporte
+local function tpToPlayer()
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= localPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            localPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+            break
         end
     end
 end
 
-btnTP.MouseButton1Click:Connect(doTP)
-UserInputService.InputBegan:Connect(function(input, proc)
-    if not proc and input.KeyCode == Enum.KeyCode.T then doTP() end
+btnTP.MouseButton1Click:Connect(tpToPlayer)
+UIS.InputBegan:Connect(function(i, p)
+    if not p and i.KeyCode == Enum.KeyCode.T then tpToPlayer() end
 end)
