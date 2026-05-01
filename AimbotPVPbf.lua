@@ -1,26 +1,26 @@
--- [[ JD_PVP V18 - VERSIÓN FINAL REPARADA ]] --
+-- [[ JD_PVP V18 - AUTOMÁTICO & CLEAN ]] --
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- 1. LIMPIEZA
+-- 1. LIMPIEZA DE INTERFAZ PREVIA
 for _, v in pairs(game.CoreGui:GetChildren()) do
     if v.Name == "JD_PVP_G" then v:Destroy() end
 end
 
 _G.JD_STATUS = false
 _G.JUMP_STATUS = false
-_G.TARGET_SPEED = 24.5 -- Velocidad balanceada para evitar reportes
+_G.TARGET_SPEED = 24.5 -- Velocidad automática (50% de reducción para seguridad)
 _G.JD_KEY = Enum.KeyCode.G 
 
--- 2. INTERFAZ (Nombre y Botón X restaurados)
+-- 2. INTERFAZ (Solo Salto y Aimbot)
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "JD_PVP_G"
 
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0, 200, 0, 160) -- Tamaño original
+main.Size = UDim2.new(0, 200, 0, 130) -- Tamaño optimizado
 main.Position = UDim2.new(0.1, 0, 0.4, 0)
 main.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 main.Active = true
@@ -28,7 +28,7 @@ main.Draggable = true
 Instance.new("UICorner", main)
 
 local title = Instance.new("TextLabel", main)
-title.Text = "JD_PVP V18 - KEY [G]" -- Nombre original restaurado
+title.Text = "JD_PVP V18 - KEY [G]"
 title.Size = UDim2.new(1, 0, 0, 35)
 title.TextColor3 = Color3.new(1, 1, 1)
 title.BackgroundTransparency = 1
@@ -46,13 +46,13 @@ local function createBtn(pos, text)
     return btn
 end
 
-local btnJump = createBtn(50, "SUPER SALTO: OFF")
-local btnAim = createBtn(100, "AIMBOT [G]: OFF")
+local btnJump = createBtn(45, "SUPER SALTO: OFF")
+local btnAim = createBtn(85, "AIMBOT [G]: OFF")
 
--- Botón de cerrar (X) restaurado
+-- Botón de cerrar (X)
 local close = Instance.new("TextButton", main)
-close.Size = UDim2.new(0, 25, 0, 25)
-close.Position = UDim2.new(1, -30, 0, 5)
+close.Size = UDim2.new(0, 20, 0, 20)
+close.Position = UDim2.new(1, -25, 0, 5)
 close.Text = "X"
 close.TextColor3 = Color3.new(1, 1, 1)
 close.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
@@ -64,7 +64,7 @@ close.MouseButton1Click:Connect(function()
     _G.JUMP_STATUS = false
 end)
 
--- 3. DETECCIÓN
+-- 3. DETECCIÓN DE TECLA G (Aimbot)
 UserInputService.InputBegan:Connect(function(input, proc)
     if not proc and input.KeyCode == _G.JD_KEY then
         _G.JD_STATUS = not _G.JD_STATUS
@@ -79,29 +79,32 @@ btnJump.MouseButton1Click:Connect(function()
     btnJump.BackgroundColor3 = _G.JUMP_STATUS and Color3.fromRGB(150, 0, 255) or Color3.fromRGB(40, 40, 40)
 end)
 
--- 4. BUCLE DE MOVIMIENTO Y FUNCIONES
+-- 4. LÓGICA DE EJECUCIÓN
 RunService.PreRender:Connect(function()
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") then
         
-        -- Movimiento Bypass Seguro
+        -- Velocidad Automática (Sin botón)
         if char.Humanoid.MoveDirection.Magnitude > 0 then
             char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame + (char.Humanoid.MoveDirection * (_G.TARGET_SPEED / 45))
         end
 
-        -- Super Salto original
+        -- Super Salto
         if _G.JUMP_STATUS and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
             char.HumanoidRootPart.Velocity = Vector3.new(char.HumanoidRootPart.Velocity.X, 400, char.HumanoidRootPart.Velocity.Z)
         end
 
-        -- Aimbot con G
+        -- Aimbot (Solo a Jugadores con Tecla G)
         if _G.JD_STATUS then
             local target = nil
             local dist = 700
             for _, p in pairs(Players:GetPlayers()) do
                 if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character.Humanoid.Health > 0 then
                     local m = (char.HumanoidRootPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
-                    if m < dist then dist = m target = p.Character.HumanoidRootPart end
+                    if m < dist then 
+                        dist = m 
+                        target = p.Character.HumanoidRootPart 
+                    end
                 end
             end
             if target then
@@ -109,4 +112,4 @@ RunService.PreRender:Connect(function()
             end
         end
     end
-end
+end)
